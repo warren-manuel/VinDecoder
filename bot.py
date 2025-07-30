@@ -1,5 +1,7 @@
 import time
 import os
+import asyncio
+from aiohttp import web
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
@@ -11,6 +13,20 @@ from nhtsa import decode_vin, is_manual
 
 ASK_AUCTION, ASK_FILTER, GET_FILTERS, PROCESS_VINS = range(4)
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+async def dummy_web_server():
+    async def handle(request):
+        return web.Response(text="VIN Decoder Bot is running!")
+    
+    app = web.Application()
+    app.add_routes([web.get("/", handle)])
+    port = int(os.environ.get("PORT", 8080))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -132,8 +148,8 @@ async def handle_auction_choice(update: Update, context: ContextTypes.DEFAULT_TY
 
     # return ConversationHandler.END
 
-def main():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+async def main():
+    telegram_app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -145,9 +161,11 @@ def main():
         fallbacks=[],
     )
 
-    app.add_handler(conv_handler)
-    print("Bot running...")
-    app.run_polling()
+    telegram_app .add_handler(conv_handler)
+    await asyncio.gather(
+        telegram_app.run_polling(),
+        dummy_web_server()
+    )
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
