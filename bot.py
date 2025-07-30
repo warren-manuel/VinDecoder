@@ -1,4 +1,5 @@
 import time
+import os
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
@@ -9,7 +10,7 @@ from auction_scraper import get_vins_from_auction
 from nhtsa import decode_vin, is_manual
 
 ASK_AUCTION, ASK_FILTER, GET_FILTERS, PROCESS_VINS = range(4)
-TELEGRAM_BOT_TOKEN = '8098312783:AAGLMRLdc-ws4TkMD1mW14DpM0fQJcVYhIo'
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
